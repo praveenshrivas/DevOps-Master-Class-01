@@ -67,7 +67,7 @@ resource "aws_instance" "devops_server" {
   vpc_security_group_ids = [aws_security_group.devops_sg.id]
 
   tags = {
-    Name = "DevOps-Masterclass-Server-01"
+    Name = "DevOps-Masterclass-Server-02"
   }
 }
 
