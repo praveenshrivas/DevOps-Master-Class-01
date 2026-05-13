@@ -82,9 +82,9 @@ jobs:
   deploy:
     name: Deployment Kickoff
     needs:
-        - terraform
-        - ansible 
-        
+      - terraform
+      - ansible
+
     runs-on: ubuntu-latest
 
     steps:
@@ -108,14 +108,44 @@ jobs:
             docker build -t devops-masterclass-app .
           "
 
-      - name: Remove Old Container
+      - name: Remove Old Application Container
         run: |
           ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@${{ needs.terraform.outputs.ec2_public_ip }} "
             docker rm -f devops-app || true
           "
 
-      - name: Run Docker Container
+      - name: Run Application Container
         run: |
           ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@${{ needs.terraform.outputs.ec2_public_ip }} "
             docker run -d -p 80:80 --name devops-app devops-masterclass-app
+          "
+
+  monitoring:
+    name: Monitoring Kickoff
+    needs:
+      - terraform
+      - deploy
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Create PEM File
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > private_key.pem
+          chmod 400 private_key.pem
+
+      - name: Remove Old Grafana Container
+        run: |
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@${{ needs.terraform.outputs.ec2_public_ip }} "
+            docker rm -f grafana || true
+          "
+
+      - name: Deploy Grafana Container
+        run: |
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@${{ needs.terraform.outputs.ec2_public_ip }} "
+            docker run -d \
+              -p 3000:3000 \
+              --name grafana \
+              grafana/grafana
           "
