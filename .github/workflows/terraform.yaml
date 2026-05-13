@@ -78,3 +78,41 @@ jobs:
       - name: Run Ansible Playbook
         run: |
           ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i inventory.ini ansible/setup.yaml
+
+  deploy:
+    name: Deployment Kickoff
+    needs: ansible
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Create PEM File
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > private_key.pem
+          chmod 400 private_key.pem
+
+      - name: Copy App Files to EC2
+        run: |
+          scp -o StrictHostKeyChecking=no -i private_key.pem -r app ec2-user@${{ needs.terraform.outputs.ec2_public_ip }}:/home/ec2-user/
+
+      - name: Build Docker Image on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@${{ needs.terraform.outputs.ec2_public_ip }} "
+            cd app &&
+            docker build -t devops-masterclass-app .
+          "
+
+      - name: Remove Old Container
+        run: |
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@${{ needs.terraform.outputs.ec2_public_ip }} "
+            docker rm -f devops-app || true
+          "
+
+      - name: Run Docker Container
+        run: |
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@${{ needs.terraform.outputs.ec2_public_ip }} "
+            docker run -d -p 80:80 --name devops-app devops-masterclass-app
+          "
