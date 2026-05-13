@@ -72,7 +72,7 @@ jobs:
 
       - name: Install Python on EC2
         run: |
-          ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@${{ needs.terraform.outputs.ec2_public_ip }} "sudo dnf install python3 -y"
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@${{ needs.terraform.outputs.ec2_public_ip }} "sudo yum install python -y"
 
       - name: Run Ansible Playbook
         run: |
