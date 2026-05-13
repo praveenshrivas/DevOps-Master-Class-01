@@ -1,17 +1,20 @@
-name: Terraform Deployment
+name: DevOps Masterclass Pipeline
 
 on:
   push:
-    # paths:
-    #   - 'terraform/**'
 
 jobs:
+
   terraform:
+    name: Terraform Kickoff
     runs-on: ubuntu-latest
 
     defaults:
       run:
         working-directory: terraform
+
+    outputs:
+      ec2_public_ip: ${{ steps.terraform_output.outputs.public_ip }}
 
     steps:
 
@@ -36,11 +39,21 @@ jobs:
 
       - name: Terraform Apply
         run: terraform apply -auto-approve
-    
+
       - name: Get EC2 Public IP
         id: terraform_output
         run: |
-          echo "EC2_PUBLIC_IP=$(terraform output -raw public_ip)" >> $GITHUB_ENV
+          echo "public_ip=$(terraform output -raw public_ip)" >> $GITHUB_OUTPUT
+
+  ansible:
+    name: Ansible Kickoff
+    needs: terraform
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
       - name: Create PEM File
         run: |
@@ -52,12 +65,11 @@ jobs:
           sudo apt update
           sudo apt install ansible -y
 
-      - name: Create Ansible Inventory
+      - name: Create Inventory File
         run: |
           echo "[dev]" > inventory.ini
-          echo "$EC2_PUBLIC_IP ansible_user=ec2-user ansible_ssh_private_key_file=private_key.pem" >> inventory.ini
+          echo "${{ needs.terraform.outputs.ec2_public_ip }} ansible_user=ec2-user ansible_ssh_private_key_file=private_key.pem" >> inventory.ini
 
       - name: Run Ansible Playbook
         run: |
           ansible-playbook -i inventory.ini ansible/setup.yaml
-          
