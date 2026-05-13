@@ -68,11 +68,11 @@ jobs:
       - name: Create Inventory File
         run: |
           echo "[dev]" > inventory.ini
-          echo "${{ needs.terraform.outputs.ec2_public_ip }} ansible_user=ec2-user ansible_ssh_private_key_file=private_key.pem ansible_python_interpreter=/usr/bin/python" >> inventory.ini
+          echo "${{ needs.terraform.outputs.ec2_public_ip }} ansible_user=ec2-user ansible_ssh_private_key_file=private_key.pem ansible_python_interpreter=/usr/bin/python3" >> inventory.ini
 
       - name: Install Python on EC2
         run: |
-          ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@${{ needs.terraform.outputs.ec2_public_ip }} "sudo yum install python -y"
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@${{ needs.terraform.outputs.ec2_public_ip }} "sudo yum install python36 -y"
 
       - name: Run Ansible Playbook
         run: |
