@@ -81,7 +81,10 @@ jobs:
 
   deploy:
     name: Deployment Kickoff
-    needs: ansible
+    needs:
+        - terraform
+        - ansible 
+        
     runs-on: ubuntu-latest
 
     steps:
